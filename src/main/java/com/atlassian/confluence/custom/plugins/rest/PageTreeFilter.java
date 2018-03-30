@@ -127,7 +127,7 @@ public class PageTreeFilter {
             /*sdfdsfsdfsdf*/
             /* Returns a JsonTreeNode structure up to the page specified by the "current" parameter */
             List<JsonTreeNode> children = getChildrenNodesFiltered(getVisibleChildren(parentPage, label), currentPage, label);
-
+/*sdfdsfsdfsdf*/
             return Response.ok(children).build();
         }
         /* Cleans up */
