@@ -124,7 +124,7 @@ public class PageTreeFilter {
 
             /* Permission evaluation against an anonymous user. Logged in users not taken into account. */
             RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);     //?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+            /*sdfdsfsdfsdf*/
             /* Returns a JsonTreeNode structure up to the page specified by the "current" parameter */
             List<JsonTreeNode> children = getChildrenNodesFiltered(getVisibleChildren(parentPage, label), currentPage, label);
 
