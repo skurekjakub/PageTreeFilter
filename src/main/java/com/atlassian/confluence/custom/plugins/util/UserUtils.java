@@ -7,7 +7,7 @@ public class UserUtils
 {
     public static User getRemoteUser()
     {
-        return AuthenticatedUserThreadLocal.getUser();
+        return AuthenticatedUserThreadLocal.get();
     }
 
     public static boolean isAnonymous(User user)

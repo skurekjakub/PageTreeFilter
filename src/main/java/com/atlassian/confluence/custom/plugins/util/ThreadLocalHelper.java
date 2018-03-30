@@ -3,6 +3,7 @@ package com.atlassian.confluence.custom.plugins.util;
 import com.atlassian.confluence.cache.ThreadLocalCache;
 import com.atlassian.core.filters.ServletContextThreadLocal;
 import com.opensymphony.webwork.ServletActionContext;
+import com.opensymphony.xwork.ActionContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -23,7 +24,7 @@ public class ThreadLocalHelper
         this.response = response;
     }
 
-    public void prepareTreadLocals()
+    public void prepareThreadLocals()
     {
         originalRequestInActionContext = ServletActionContext.getRequest();
         originalResponseInActionContext = ServletActionContext.getResponse();

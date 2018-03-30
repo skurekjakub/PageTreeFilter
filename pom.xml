@@ -13,6 +13,14 @@
     <description>This is the com.atlassian.confluence.custom.plugins:PageTreeFilter plugin for Atlassian Confluence.</description>
     <packaging>atlassian-plugin</packaging>
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.atlassian.bonnie/atlassian-bonnie -->
+        <!-- https://mvnrepository.com/artifact/com.atlassian.bonnie/atlassian-bonnie -->
+        <dependency>
+            <groupId>com.atlassian.bonnie</groupId>
+            <artifactId>atlassian-bonnie</artifactId>
+            <version>6.5.3</version>
+        </dependency>
+
 
         <dependency>
             <groupId>opensymphony</groupId>
@@ -117,6 +125,11 @@
             <groupId>com.atlassian.user</groupId>
             <artifactId>atlassian-user</artifactId>
             <version>3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>opensymphony</groupId>
+            <artifactId>xwork</artifactId>
+            <version>1.0.3</version>
         </dependency>
     </dependencies>
     <build>

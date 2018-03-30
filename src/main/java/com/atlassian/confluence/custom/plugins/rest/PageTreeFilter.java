@@ -47,27 +47,27 @@ public class PageTreeFilter {
     /* IDK why this is here, looks like the best place to store these, since i need them in
      * a couple of methods and passing them over and over down the chain seems weird. */
     private long spaceId;
-    private String spaceKey;
 
     /* 'Stack' used in the Url building process on initial pageload */
     private String[] urlFragmentStack = new String[10];
     private int stackDepth = 0;
 
-    /* Tells Spring to inject into this constructor */
+    /* Tells Spring where to DI */
     @Inject
     public PageTreeFilter(PageManager pageManager) {
         this.pageManager = pageManager;
     }
 
-
+    /* Endpoint kept for testing purposes. */
     @GET
     @Path("/")
     @AnonymousAllowed
     @Produces({"application/json"})
     public Response helloWorld()
     {
-        return Response.ok("{value: Hello World!}").build();
+        return Response.ok("{'value': 'Hello World!'}").build();
     }
+
 
     /* Endpoint kept for testing purposes. Returns a page and its direct descendants. */
     @GET
@@ -94,7 +94,7 @@ public class PageTreeFilter {
 
 
     /* Endpoint called on inital page load.
-    NOTE: Modification of this method's signature will require additional customizations in our Scroll viewport theme! */
+    NOTE: Modifications of this method's signature will require additional customization of our Scroll Viewport theme! */
     @GET
     @Path("getchildrenrecursive")
     @AnonymousAllowed
@@ -104,18 +104,18 @@ public class PageTreeFilter {
                                          @Context final HttpServletRequest request, @Context final HttpServletResponse response)
     {
         this.spaceId = spaceId;
-        spaceKey = getPageById(spaceId).getSpaceKey().toLowerCase();
+        String spaceKey = getPageById(spaceId).getSpaceKey().toLowerCase();
 
         /* First fragment of the URL */
         urlFragmentStack[stackDepth] = convertTitleToUrlFragment(spaceKey);
 
         /* Prepares the request environment. Required by Java applications ('servlets') exposing REST services.
-         * Read more at  */
+         * Ensures no concurrency shenanigans can occur, etc.  */
         ThreadLocalHelper threadLocalHelper = new ThreadLocalHelper(request, response);
-        threadLocalHelper.prepareTreadLocals();
+        threadLocalHelper.prepareThreadLocals();
         try
         {
-            Page parentPage = getPageByTitle(spaceKey, processParentTile(parentTitle));
+            Page parentPage = getPageByTitle(spaceKey, processParentTitle(parentTitle));
             Page currentPage = getPageByTitle(spaceKey, currentTitle);
 
             /* Null check. Should not be necessary since the calls should always come with valid parameters
@@ -123,7 +123,7 @@ public class PageTreeFilter {
             RestValidate.notNull(parentPage, Response.Status.NOT_FOUND);
 
             /* Permission evaluation against an anonymous user. Logged in users not taken into account. */
-            //RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);     //?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);     //?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             /* Returns a JsonTreeNode structure up to the page specified by the "current" parameter */
             List<JsonTreeNode> children = getChildrenNodesFiltered(getVisibleChildren(parentPage, label), currentPage, label);
@@ -149,16 +149,18 @@ public class PageTreeFilter {
                                 @Context final HttpServletRequest request, @Context final HttpServletResponse response)
     {
         this.spaceId = spaceId;
-        spaceKey = getPageById(spaceId).getSpaceKey().toLowerCase();
+        String spaceKey = getPageById(spaceId).getSpaceKey().toLowerCase();
 
+        /* Prepares the request environment. Required by Java applications ('servlets') exposing REST services.
+         * Ensures no concurrency shenanigans can occur, etc.  */
         ThreadLocalHelper threadLocalHelper = new ThreadLocalHelper(request, response);
-        threadLocalHelper.prepareTreadLocals();
+        threadLocalHelper.prepareThreadLocals();
         try
         {
-            Page parentPage = getPageByTitle(spaceKey, processParentTile(parentTitle));
+            Page parentPage = getPageByTitle(spaceKey, parentTitle);
 
             RestValidate.notNull(parentPage, Response.Status.NOT_FOUND);
-            //RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);
+            RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);
 
             List<JsonTreeNode> children = getDirectDescendants(getVisibleChildren(parentPage, label), label, parentLink);
 
@@ -171,6 +173,8 @@ public class PageTreeFilter {
     }
 
 
+    /* =========================================PRIVATE METHODS===================================================== */
+
     /* Recursively retrieves all children up to the current node based on supplied parameters */
     private List<JsonTreeNode> getChildrenNodesFiltered(List<Page> parentsVisibleChildren, Page currentPage, String label)
     {
@@ -179,10 +183,9 @@ public class PageTreeFilter {
         {
             List<Page> childsVisibleChildren = getVisibleChildren(child, label);
 
-            String link = buildUrl(child);
+            JsonTreeNode node = new JsonTreeNode(child, buildUrl(child), !childsVisibleChildren.isEmpty());
 
-            JsonTreeNode node = new JsonTreeNode(child, link, !childsVisibleChildren.isEmpty());
-
+            /* Do we need recursion? */
             if (currentPage != null) {
                 boolean isAncestor = currentPage.getAncestors().contains(child);
                 boolean isCurrent = currentPage.equals(child);
@@ -205,15 +208,6 @@ public class PageTreeFilter {
         return result;
     }
 
-    private String buildUrl(Page child) {
-        StringBuilder link = new StringBuilder();
-        for (int i = 0; i<= stackDepth; i++) {
-            link.append(urlFragmentStack[i]);
-        }
-        link.append(convertTitleToUrlFragment(child.getTitle()));
-        return link.toString();
-    }
-
 
     private List<JsonTreeNode> getDirectDescendants(List<Page> parentsVisibleChildren, String label, String parentLink) {
         List<JsonTreeNode> result = new ArrayList<>();
@@ -228,17 +222,28 @@ public class PageTreeFilter {
     }
 
 
+    private String buildUrl(Page child) {
+        StringBuilder link = new StringBuilder();
+        for (int i = 0; i<= stackDepth; i++) {
+            link.append(urlFragmentStack[i]);
+        }
+        link.append(convertTitleToUrlFragment(child.getTitle()));
+        return link.toString();
+    }
+
+
+
     /* PERMISSIONS WILL NEED RESEARCH, CURRENTLY KEEPS FAILING ON ROOT NODE, CONSIDERING HARDCODING AN EXCEPTION */
     private boolean canView(Page page)
     {
         /* Uses current user context to infer a user.
          * Returns false if a user is anonymous and the page is restricted in any way. */
-        if (UserUtils.isAnonymous(UserUtils.getRemoteUser()))
-            return page.hasPermissions("VIEW_PERMISSION");
-        else if (UserUtils.isNotAnonymous(UserUtils.getRemoteUser())){
+    /*    if (UserUtils.isAnonymous(UserUtils.getRemoteUser()))
+            return true *//*page.hasPermissions("VIEW_PERMISSION")*//*;
+        else {
             return true;
-        }
-        return false;
+        }*/
+        return true;
     }
 
 
@@ -264,17 +269,6 @@ public class PageTreeFilter {
     }
 
 
-    private String processParentTile(String parentTitle) {
-        /* Check for initial page load request - parent always set to root in this case, only time i
-        cannot guarantee the actual page title will be sent to the endpoint */
-        if(parentTitle.charAt(0) == '/')
-        {
-            return getRootPage().getTitle();
-        }
-
-        return parentTitle;
-    }
-
     private List<Page> getVisibleChildren(Page page, String label)
     {
         List<Page> result = new ArrayList<>();
@@ -288,6 +282,17 @@ public class PageTreeFilter {
 
     private Page getRootPage() {
         return getPageById(spaceId);
+    }
+
+
+    private String processParentTitle(String parentTitle) {
+        /* Check for initial page load request - parent always set to root in this case, only time i
+        cannot guarantee the actual page title will be sent to the endpoint */
+        if(parentTitle.charAt(0) == '/')
+        {
+            return getRootPage().getTitle();
+        }
+        return parentTitle;
     }
 
 
