@@ -34,5 +34,6 @@
     <orderEntry type="library" scope="TEST" name="Maven: org.mockito:mockito-all:1.8.5" level="project" />
     <orderEntry type="library" name="Maven: com.atlassian.core:atlassian-core:4.6.17" level="project" />
     <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.6" level="project" />
+    <orderEntry type="library" name="Maven: com.atlassian.user:atlassian-user:3.0" level="project" />
   </component>
 </module>

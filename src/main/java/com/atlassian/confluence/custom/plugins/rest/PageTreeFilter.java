@@ -1,6 +1,7 @@
 package com.atlassian.confluence.custom.plugins.rest;
 
 /* Imports custom Atlassian Spring annotations */
+import com.atlassian.confluence.custom.plugins.util.UserUtils;
 import com.atlassian.plugin.spring.scanner.annotation.component.Scanned;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.plugins.rest.common.security.AnonymousAllowed;
@@ -228,15 +229,16 @@ public class PageTreeFilter {
 
 
     /* PERMISSIONS WILL NEED RESEARCH, CURRENTLY KEEPS FAILING ON ROOT NODE, CONSIDERING HARDCODING AN EXCEPTION */
-    private void canView(Page page)
+    private boolean canView(Page page)
     {
         /* Uses current user context to infer a user.
          * Returns false if a user is anonymous and the page is restricted in any way. */
-    /*    if (AuthenticatedUserThreadLocal.isAnonymousUser())
+        if (UserUtils.isAnonymous(UserUtils.getRemoteUser()))
             return page.hasPermissions("VIEW_PERMISSION");
-        else {
+        else if (UserUtils.isNotAnonymous(UserUtils.getRemoteUser())){
             return true;
-        }*/
+        }
+        return false;
     }
 
 
@@ -277,7 +279,7 @@ public class PageTreeFilter {
     {
         List<Page> result = new ArrayList<>();
         for (Page child : page.getSortedChildren()) {
-            if(/*canView(child)*/ true && !retrieveLabels(child).contains(label)) {
+            if(canView(child) && !retrieveLabels(child).contains(label)) {
                 result.add(child);
             }
         }
