@@ -43,18 +43,23 @@ import com.atlassian.confluence.custom.plugins.util.ThreadLocalHelper;
 @Scanned
 public class PageTreeFilter {
 
+
+    /* Init necessary Confluence managers (providers) */
     @ComponentImport
     private final PageManager pageManager;
     @ComponentImport
     private final PermissionManager permissionManager;
 
+
     /* IDK why this is here, looks like the best place to store these, since i need them in
      * a couple of methods and passing them over and over down the chain seems weird. */
     private long spaceId;
 
+
     /* 'Stack' used in the Url building process on initial pageload */
     private String[] urlFragmentStack = new String[10];
     private int stackDepth = 0;
+
 
     /* Specifies the constructor for the Spring DI container */
     @Inject
@@ -63,6 +68,7 @@ public class PageTreeFilter {
         this.pageManager = pageManager;
         this.permissionManager = permissionManager;
     }
+
 
     /* Endpoint kept for testing purposes. Returns a simple greeting. */
     @GET
@@ -121,19 +127,21 @@ public class PageTreeFilter {
         threadLocalHelper.prepareThreadLocals();
         try
         {
-            Page parentPage = getPageByTitle(spaceKey, processParentTitle(parentTitle));
+            /* Gets required pages */
+            Page parentPage = getPageByTitle(spaceKey,(parentTitle.charAt(0) == '/')  ? getRootPage().getTitle() : parentTitle);
             Page currentPage = getPageByTitle(spaceKey, currentTitle);
 
             /* Null check. Should not be necessary since the calls should always come with valid parameters
              * and in case an exception does occur, will be handled by the instance itself.  */
             RestValidate.notNull(parentPage, Response.Status.NOT_FOUND);
 
-            /* Permission evaluation against an anonymous user. Logged in users not taken into account. */
+            /* Permission evaluation. Should a page the user does not hold sufficient permissions to view be requested, returns 403. */
             RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);     //?
 
-            /* Returns a JsonTreeNode structure up to the page specified by the "current" parameter */
+            /* Returns a JsonTreeNode structure up to the page specified by the "currentPage" parameter */
             List<JsonTreeNode> children = getChildrenNodesFiltered(getVisibleChildren(parentPage, label), currentPage, label);
 
+            /* Serializes the retrieved data and sends them */
             return Response.ok(children).build();
         }
         /* Cleans up */
@@ -181,6 +189,7 @@ public class PageTreeFilter {
 
     /* =========================================PRIVATE METHODS===================================================== */
 
+
     /* Recursively retrieves all children up to the current node based on supplied parameters */
     private List<JsonTreeNode> getChildrenNodesFiltered(List<Page> parentsVisibleChildren, Page currentPage, String label)
     {
@@ -215,6 +224,7 @@ public class PageTreeFilter {
     }
 
 
+    /* Returns only the direct, visible descendants of the current page. */
     private List<JsonTreeNode> getDirectDescendants(List<Page> parentsVisibleChildren, String label, String parentLink) {
         List<JsonTreeNode> result = new ArrayList<>();
         for (Page child : parentsVisibleChildren)
@@ -260,10 +270,9 @@ public class PageTreeFilter {
 
     private List<String> retrieveLabels(Page page) {
         List<String> labels = new ArrayList<String>();
-        for (Label label: page.getLabels())
-        {
-            labels.add(label.toString());
-        }
+
+        page.getLabels().forEach(label -> labels.add(label.toString()));
+
         return labels;
     }
 
@@ -281,17 +290,6 @@ public class PageTreeFilter {
 
     private Page getRootPage() {
         return getPageById(spaceId);
-    }
-
-
-    private String processParentTitle(String parentTitle) {
-        /* Check for initial page load request - parent always set to root in this case, only time i
-        cannot guarantee the actual page title will be sent to the endpoint */
-        if(parentTitle.charAt(0) == '/')
-        {
-            return getRootPage().getTitle();
-        }
-        return parentTitle;
     }
 
 
