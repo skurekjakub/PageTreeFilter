@@ -22,11 +22,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-/* Imports basic Java objects */
+/* Imports basic Java objects and utilities */
 import java.util.ArrayList;
 import java.util.List;
-
-import com.atlassian.user.User;
 import org.apache.commons.lang.StringUtils;
 
 /* Imports custom helper objects */
@@ -58,14 +56,15 @@ public class PageTreeFilter {
     private String[] urlFragmentStack = new String[10];
     private int stackDepth = 0;
 
-    /* Tells Spring where to DI */
+    /* Specifies the constructor for the Spring DI container */
     @Inject
+    /* Inits the PageTreeFilter class */
     public PageTreeFilter(PageManager pageManager, PermissionManager permissionManager) {
         this.pageManager = pageManager;
         this.permissionManager = permissionManager;
     }
 
-    /* Endpoint kept for testing purposes. */
+    /* Endpoint kept for testing purposes. Returns a simple greeting. */
     @GET
     @Path("/")
     @AnonymousAllowed
@@ -113,7 +112,7 @@ public class PageTreeFilter {
         this.spaceId = spaceId;
         String spaceKey = getPageById(spaceId).getSpaceKey().toLowerCase();
 
-        /* First fragment of the URL */
+        /* Saves the first fragment of the URL (should always be the space key) */
         urlFragmentStack[stackDepth] = convertTitleToUrlFragment(spaceKey);
 
         /* Prepares the request environment. Required by Java applications ('servlets') exposing REST services.
@@ -245,7 +244,7 @@ public class PageTreeFilter {
         return permissionManager.hasPermission(UserUtils.getCurrentUser(), Permission.VIEW, page);
     }
 
-    
+
     /* This is what not knowing RegEx leads to */
     private String convertTitleToUrlFragment(String title) {
         return "/" + title.toLowerCase()
