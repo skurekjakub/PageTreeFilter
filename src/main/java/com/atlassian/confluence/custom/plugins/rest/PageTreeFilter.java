@@ -2,6 +2,8 @@ package com.atlassian.confluence.custom.plugins.rest;
 
 /* Imports custom Atlassian Spring annotations */
 import com.atlassian.confluence.custom.plugins.util.UserUtils;
+import com.atlassian.confluence.security.Permission;
+import com.atlassian.confluence.security.PermissionManager;
 import com.atlassian.plugin.spring.scanner.annotation.component.Scanned;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.plugins.rest.common.security.AnonymousAllowed;
@@ -23,6 +25,8 @@ import javax.ws.rs.core.Response;
 /* Imports basic Java objects */
 import java.util.ArrayList;
 import java.util.List;
+
+import com.atlassian.user.User;
 import org.apache.commons.lang.StringUtils;
 
 /* Imports custom helper objects */
@@ -43,6 +47,8 @@ public class PageTreeFilter {
 
     @ComponentImport
     private final PageManager pageManager;
+    @ComponentImport
+    private final PermissionManager permissionManager;
 
     /* IDK why this is here, looks like the best place to store these, since i need them in
      * a couple of methods and passing them over and over down the chain seems weird. */
@@ -54,8 +60,9 @@ public class PageTreeFilter {
 
     /* Tells Spring where to DI */
     @Inject
-    public PageTreeFilter(PageManager pageManager) {
+    public PageTreeFilter(PageManager pageManager, PermissionManager permissionManager) {
         this.pageManager = pageManager;
+        this.permissionManager = permissionManager;
     }
 
     /* Endpoint kept for testing purposes. */
@@ -123,11 +130,11 @@ public class PageTreeFilter {
             RestValidate.notNull(parentPage, Response.Status.NOT_FOUND);
 
             /* Permission evaluation against an anonymous user. Logged in users not taken into account. */
-            RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);     //?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            /*sdfdsfsdfsdf*/
+            RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);     //?
+
             /* Returns a JsonTreeNode structure up to the page specified by the "current" parameter */
             List<JsonTreeNode> children = getChildrenNodesFiltered(getVisibleChildren(parentPage, label), currentPage, label);
-/*sdfdsfsdfsdf*/
+
             return Response.ok(children).build();
         }
         /* Cleans up */
@@ -233,17 +240,17 @@ public class PageTreeFilter {
 
 
 
-    /* PERMISSIONS WILL NEED RESEARCH, CURRENTLY KEEPS FAILING ON ROOT NODE, CONSIDERING HARDCODING AN EXCEPTION */
+
     private boolean canView(Page page)
     {
         /* Uses current user context to infer a user.
          * Returns false if a user is anonymous and the page is restricted in any way. */
-    /*    if (UserUtils.isAnonymous(UserUtils.getRemoteUser()))
-            return true *//*page.hasPermissions("VIEW_PERMISSION")*//*;
+        User user = UserUtils.getRemoteUser();
+        if (UserUtils.isAnonymous(user))
+            return permissionManager.hasPermission(user, Permission.VIEW, page);
         else {
             return true;
-        }*/
-        return true;
+        }
     }
 
 
