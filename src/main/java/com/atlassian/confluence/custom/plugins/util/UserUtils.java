@@ -5,7 +5,7 @@ import com.atlassian.user.User;
 
 public class UserUtils
 {
-    public static User getRemoteUser()
+    public static User getCurrentUser()
     {
         return AuthenticatedUserThreadLocal.get();
     }
@@ -17,6 +17,7 @@ public class UserUtils
 
     public static boolean isNotAnonymous(User user)
     {
+
         return user != null;
     }
 }

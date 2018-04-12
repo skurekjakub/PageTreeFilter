@@ -239,21 +239,14 @@ public class PageTreeFilter {
     }
 
 
-
-
+    /* Retrieves a user from current context and evaluates his permissions for the given page */
     private boolean canView(Page page)
     {
-        /* Uses current user context to infer a user.
-         * Returns false if a user is anonymous and the page is restricted in any way. */
-        User user = UserUtils.getRemoteUser();
-        if (UserUtils.isAnonymous(user))
-            return permissionManager.hasPermission(user, Permission.VIEW, page);
-        else {
-            return true;
-        }
+        return permissionManager.hasPermission(UserUtils.getCurrentUser(), Permission.VIEW, page);
     }
 
-
+    
+    /* This is what not knowing RegEx leads to */
     private String convertTitleToUrlFragment(String title) {
         return "/" + title.toLowerCase()
                 .replace("(", "")
