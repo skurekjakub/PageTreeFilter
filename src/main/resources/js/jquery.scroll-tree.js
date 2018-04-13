@@ -72,14 +72,13 @@
             ;
         }
 
-        function loadChildrenOutsideOriginalPath($ul, parentTitle, currentTitle) {
+        function loadDirectDescendants($ul, parentTitle, currentTitle) {
             var $parentLi = $ul.closest('li');
             if ($parentLi) {
                 $parentLi.removeClass(opts.css.collapsed)
                     .addClass(opts.css.loading);
             }
  			var label = sessionStorage.getItem('label');
-          	// alert(label);
           	// CUSTOM ENDPOINT 2 - called when opening subtrees outside the original page load request
             // uses DOM to persist already loaded page links to avoid repeated use of recursion
             $.get(opts.contextPath + '/rest/treefilter/1.0/getchildren', {
@@ -144,7 +143,7 @@
             } else {
                 // children have to be loaded
                 var $childrenEl = $(opts.renderChildrenUl()).appendTo($li);
-                loadChildrenOutsideOriginalPath($childrenEl);
+                loadDirectDescendants($childrenEl);
             }
         }
 
