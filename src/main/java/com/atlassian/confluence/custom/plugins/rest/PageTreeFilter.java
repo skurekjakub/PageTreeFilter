@@ -225,16 +225,13 @@ public class PageTreeFilter {
 
 
     /* Returns only the direct, visible descendants of the current page. */
-    private List<JsonTreeNode> getDirectDescendants(List<Page> parentsVisibleChildren, String label, String parentLink) {
+    private List<JsonTreeNode> getDirectDescendants(List<Page> parentsVisibleChildren, String label, String parentLink)
+    {
         List<JsonTreeNode> result = new ArrayList<>();
-        for (Page child : parentsVisibleChildren)
-        {
-            JsonTreeNode node = new JsonTreeNode(child, parentLink + convertTitleToUrlFragment(child.getTitle()), !getVisibleChildren(child, label).isEmpty());
 
-            result.add(node);
-        }
+        parentsVisibleChildren.forEach(child -> result.add(new JsonTreeNode(child, parentLink + convertTitleToUrlFragment(child.getTitle()), !getVisibleChildren(child, label).isEmpty())));
+
         return result;
-
     }
 
 
