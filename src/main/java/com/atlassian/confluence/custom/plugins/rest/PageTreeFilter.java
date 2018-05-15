@@ -32,7 +32,7 @@ import com.atlassian.confluence.custom.plugins.util.RestValidate;
 import com.atlassian.confluence.custom.plugins.util.ThreadLocalHelper;
 
 /**
- * Provides two additional REST endpoints for the native Confluence REST API.
+ * Provides two additional REST endpoints extending the native Confluence REST API.
  * '/rest/treefilter/getchildrenrecursive' returns a list of children on a path from a parent to a specific child page,
  * it also lists all other child pages on each visited level sorted by their position in the Confluence space.
  * '/rest/treefilter/getchildren' returns a list of children for a given parent, sorted by their position in the Confluence space
@@ -56,12 +56,12 @@ public class PageTreeFilter {
     private long spaceId;
 
 
-    /* 'Stack' used in the Url building process on initial pageload */
+    /* 'Stack' used in the building of page urls retrieved via recursion on initial page load */
     private String[] urlFragmentStack = new String[10];
     private int stackDepth = 0;
 
 
-    /* Specifies the constructor for the Spring DI container */
+    /* Specifies the constructor to inject */
     @Inject
     /* Inits the PageTreeFilter class */
     public PageTreeFilter(PageManager pageManager, PermissionManager permissionManager) {
@@ -81,31 +81,7 @@ public class PageTreeFilter {
     }
 
 
-    /* Endpoint kept for testing purposes. Returns a page and its direct descendants. */
-    @GET
-    @Path("getpage")
-    @AnonymousAllowed
-    @Produces({"application/json"})
-    public Response getPage(@QueryParam("spaceKey")final String spaceKey,@QueryParam("pageTitle")final String pageTitle) {
-        Page page = getPageByTitle(spaceKey, pageTitle);
-        if (page != null) {
-            if (page.hasChildren()) {
-                List<JsonTreeNode> children = new ArrayList<>();
-                for (Page child :
-                        page.getSortedChildren()) {
-                    children.add(new JsonTreeNode("normal", page.getSpaceKey(), child.getTitle(), child.getUrlPath(), null));
-                }
-                JsonTreeNode node = new JsonTreeNode("normal", page.getSpaceKey(), page.getTitle(), page.getUrlPath(), children);
-                return Response.ok(node).build();
-            }
-            JsonTreeNode node = new JsonTreeNode("normal", page.getSpaceKey(), page.getTitle(), page.getUrlPath(), null);
-            return Response.ok(node).build();
-        }
-        return Response.status(404).build();
-    }
-
-
-    /* Endpoint called on inital page load.
+    /* Endpoint called on initial page load.
     NOTE: Modifications of this method's signature will require additional customization of our Scroll Viewport theme! */
     @GET
     @Path("getchildrenrecursive")
@@ -132,10 +108,10 @@ public class PageTreeFilter {
             Page currentPage = getPageByTitle(spaceKey, currentTitle);
 
             /* Null check. Should not be necessary since the calls should always come with valid parameters
-             * and in case an exception does occur, will be handled by the instance itself.  */
+             * and in case an exception does occur, it should be handled by the instance itself.  */
             RestValidate.notNull(parentPage, Response.Status.NOT_FOUND);
 
-            /* Permission evaluation. Should a page the user does not hold sufficient permissions to view be requested, returns 403. */
+            /* Permission evaluation. Returns 403 if the client does not hold sufficient permissions to view the requested page. */
             RestValidate.isTrue(canView(parentPage), Response.Status.FORBIDDEN);     //?
 
             /* Returns a JsonTreeNode structure up to the page specified by the "currentPage" parameter */
@@ -266,6 +242,7 @@ public class PageTreeFilter {
 
 
     private List<String> retrieveLabels(Page page) {
+
         List<String> labels = new ArrayList<String>();
 
         page.getLabels().forEach(label -> labels.add(label.toString()));
@@ -276,7 +253,8 @@ public class PageTreeFilter {
 
     private List<Page> getVisibleChildren(Page page, String label)
     {
-        List<Page> result = new ArrayList<>();
+        List<Page> result =  new ArrayList<Page>();
+
         for (Page child : page.getSortedChildren()) {
             if(canView(child) && !retrieveLabels(child).contains(label)) {
                 result.add(child);
